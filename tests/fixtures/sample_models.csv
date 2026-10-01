@@ -1,0 +1,11 @@
+Model,Generation,Years,Body Style,Engine,Horsepower,Torque (lb-ft),0-60 (s),Top Speed (mph),Transmission,Drivetrain,Base MSRP (USD)
+911 Carrera,992.2,2025-,Coupe,3.0L twin-turbo flat-6,388,331,3.9,183,8-speed PDK,RWD,"$122,095"
+911 Carrera T,992.2,2025-,Coupe,3.0L twin-turbo flat-6,388,331,4.3,182,7-speed manual,RWD,"$136,300"
+911 Carrera GTS,992.2,2025-,Coupe,3.6L T-Hybrid flat-6,532,449,3.0,194,8-speed PDK,RWD,"$166,895"
+911 Turbo S,992.1,2021-2024,Coupe,3.7L twin-turbo flat-6,640,590,2.6,205,8-speed PDK,AWD,"$230,400"
+911 GT3,992.1,2022-2024,Coupe,4.0L naturally aspirated flat-6,502,346,3.2,197,6-speed manual / 7-speed PDK,RWD,"$182,900"
+718 Cayman GT4 RS,982,2022-2025,Coupe,4.0L naturally aspirated flat-6,493,331,3.2,196,7-speed PDK,RWD,"$160,700"
+718 Boxster,982,2017-2025,Convertible,2.0L turbo flat-4,300,280,4.9,170,6-speed manual / 7-speed PDK,RWD,"$72,050"
+Taycan,J1.2,2025-,Sedan,Single-motor electric,402,254,4.5,143,2-speed,RWD,"$99,400"
+Macan Electric,PPE,2025-,SUV,Dual-motor electric,402,479,4.9,137,Single-speed,AWD,"$78,800"
+Cayenne,E3.2,2024-,SUV,3.0L turbo V6,348,368,5.7,157,8-speed Tiptronic,AWD,"$83,600"
