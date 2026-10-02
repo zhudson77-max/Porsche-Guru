@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from pathlib import Path
 
 import anthropic
 
@@ -35,7 +36,9 @@ load_dotenv()
 
 from .agent import PorscheGuru  # noqa: E402
 
-DEFAULT_DATA = os.environ.get("PORSCHE_GURU_DATA", "data/porsche_911.csv")
+DEFAULT_DATA = os.environ.get(
+    "PORSCHE_GURU_DATA", str(Path(__file__).resolve().parent.parent / "data" / "porsche_911.csv")
+)
 
 BANNER = """Porsche Guru — ask about models in your table, or have me hunt down listings.
   e.g. "Compare the 992 GT3 and the 991.2 GT3 from my table"

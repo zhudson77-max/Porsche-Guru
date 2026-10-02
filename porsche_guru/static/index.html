@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Porsche Guru</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --panel: #ffffff; --text: #1d1d1f; --muted: #6b6b70;
+    --border: #e2e0db; --accent: #b3121f; --accent-text: #ffffff;
+    --user-bg: #1d1d1f; --user-text: #ffffff; --code-bg: #f0eee9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121214; --panel: #1c1c1f; --text: #ececee; --muted: #9a9aa2;
+      --border: #2e2e33; --accent: #e0303d; --accent-text: #ffffff;
+      --user-bg: #ececee; --user-text: #121214; --code-bg: #26262a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column; min-height: 100vh;
+  }
+  header {
+    padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--panel);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  header h1 { margin: 0; font-size: 1.15rem; letter-spacing: 0.02em; }
+  header h1 span { color: var(--accent); }
+  header button {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 8px; padding: 6px 12px; font: inherit; font-size: 0.9rem; cursor: pointer;
+  }
+  main { flex: 1; width: 100%; max-width: 860px; margin: 0 auto; padding: 20px 16px 140px; }
+  .intro { color: var(--muted); }
+  .intro ul { padding-left: 1.2em; }
+  .intro li { cursor: pointer; text-decoration: underline dotted; margin: 4px 0; }
+  .msg { margin: 18px 0; }
+  .msg.user .bubble {
+    background: var(--user-bg); color: var(--user-text); border-radius: 14px;
+    padding: 10px 14px; margin-left: auto; width: fit-content; max-width: 85%; white-space: pre-wrap;
+  }
+  .msg.guru .bubble {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    padding: 4px 18px; overflow-x: auto;
+  }
+  .msg.error .bubble { border-color: var(--accent); color: var(--accent); padding: 12px 18px; }
+  .activity { color: var(--muted); font-size: 0.9rem; padding: 10px 0; }
+  .activity div { overflow-wrap: anywhere; }
+  .activity div::before { content: "· "; }
+  .spinner {
+    display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px;
+    border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .bubble table { border-collapse: collapse; margin: 12px 0; font-size: 0.92rem; min-width: 100%; }
+  .bubble th, .bubble td { border: 1px solid var(--border); padding: 6px 9px; text-align: left; vertical-align: top; }
+  .bubble th { background: var(--code-bg); }
+  .bubble a { color: var(--accent); overflow-wrap: anywhere; }
+  .bubble code { background: var(--code-bg); padding: 1px 5px; border-radius: 5px; }
+  .sources { font-size: 0.85rem; color: var(--muted); border-top: 1px solid var(--border); margin-top: 10px; padding: 8px 0; }
+  .sources ol { margin: 4px 0; padding-left: 1.3em; }
+  form {
+    position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg);
+    border-top: 1px solid var(--border); padding: 12px 16px;
+  }
+  .composer { max-width: 860px; margin: 0 auto; display: flex; gap: 10px; }
+  textarea {
+    flex: 1; resize: none; min-height: 48px; max-height: 160px; padding: 12px 14px;
+    border: 1px solid var(--border); border-radius: 12px; background: var(--panel); color: var(--text);
+    font: inherit;
+  }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  form button {
+    background: var(--accent); color: var(--accent-text); border: 0; border-radius: 12px;
+    padding: 0 20px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  form button:disabled { opacity: 0.5; cursor: default; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Porsche <span>Guru</span></h1>
+  <button id="reset" type="button">New conversation</button>
+</header>
+
+<main id="log">
+  <div class="intro" id="intro">
+    <p>Ask about any 911 in the model table, or have me search live listings by model, specs and price.</p>
+    <ul>
+      <li>Compare the 992 GT3 and the 991.2 GT3 from my table</li>
+      <li>Find 992 GT3 manuals for sale under $230k</li>
+      <li>Which air-cooled 911s have the best power-to-weight?</li>
+    </ul>
+  </div>
+</main>
+
+<form id="form">
+  <div class="composer">
+    <textarea id="question" rows="1" placeholder="Ask Porsche Guru…" aria-label="Your question"></textarea>
+    <button id="send" type="submit">Ask</button>
+  </div>
+</form>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script>
+(function () {
+  const log = document.getElementById("log");
+  const form = document.getElementById("form");
+  const input = document.getElementById("question");
+  const send = document.getElementById("send");
+  const intro = document.getElementById("intro");
+
+  function newId() {
+    return (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
+  }
+  let sessionId;
+  try {
+    sessionId = sessionStorage.getItem("pg-session") || newId();
+    sessionStorage.setItem("pg-session", sessionId);
+  } catch (e) {
+    sessionId = newId();
+  }
+
+  if (window.DOMPurify) {
+    DOMPurify.addHook("afterSanitizeAttributes", function (node) {
+      if (node.tagName === "A") { node.setAttribute("target", "_blank"); node.setAttribute("rel", "noopener noreferrer"); }
+    });
+  }
+
+  function renderMarkdown(text) {
+    if (window.marked && window.DOMPurify) {
+      return DOMPurify.sanitize(marked.parse(text));
+    }
+    const div = document.createElement("div");
+    div.style.whiteSpace = "pre-wrap";
+    div.textContent = text;
+    return div.outerHTML;
+  }
+
+  function addMessage(kind) {
+    if (intro) intro.remove();
+    const msg = document.createElement("div");
+    msg.className = "msg " + kind;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    msg.appendChild(bubble);
+    log.appendChild(msg);
+    return bubble;
+  }
+
+  function scrollDown() { window.scrollTo(0, document.body.scrollHeight); }
+
+  function setBusy(busy) { send.disabled = busy; input.disabled = busy; if (!busy) input.focus(); }
+
+  async function ask(question) {
+    addMessage("user").textContent = question;
+    const bubble = addMessage("guru");
+    const activity = document.createElement("div");
+    activity.className = "activity";
+    activity.innerHTML = '<span class="spinner"></span>Thinking…';
+    bubble.appendChild(activity);
+    scrollDown();
+    setBusy(true);
+
+    try {
+      const start = await fetch("api/ask", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, question: question }),
+      });
+      const started = await start.json();
+      if (!start.ok) throw new Error(started.error || "Request failed.");
+
+      let shown = 0;
+      while (true) {
+        await new Promise(function (r) { setTimeout(r, 1200); });
+        const res = await fetch("api/jobs/" + started.job_id);
+        const job = await res.json();
+        if (!res.ok) throw new Error(job.error || "Lost track of the request.");
+        for (; shown < job.activity.length; shown++) {
+          const line = document.createElement("div");
+          line.textContent = job.activity[shown];
+          activity.appendChild(line);
+          scrollDown();
+        }
+        if (job.status === "error") throw new Error(job.error);
+        if (job.status === "done") {
+          bubble.innerHTML = renderMarkdown(job.result.text || "(No answer.)");
+          if (job.result.sources.length) {
+            const src = document.createElement("div");
+            src.className = "sources";
+            src.innerHTML = "Sources<ol></ol>";
+            job.result.sources.forEach(function (s) {
+              const li = document.createElement("li");
+              const a = document.createElement("a");
+              a.href = s.url; a.textContent = s.title; a.target = "_blank"; a.rel = "noopener noreferrer";
+              li.appendChild(a);
+              src.querySelector("ol").appendChild(li);
+            });
+            bubble.appendChild(src);
+          }
+          break;
+        }
+      }
+    } catch (err) {
+      bubble.parentElement.className = "msg guru error";
+      bubble.textContent = err.message || String(err);
+    } finally {
+      setBusy(false);
+      scrollDown();
+    }
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    const q = input.value.trim();
+    if (!q || send.disabled) return;
+    input.value = "";
+    ask(q);
+  });
+
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+
+  document.querySelectorAll("#intro li").forEach(function (li) {
+    li.addEventListener("click", function () { input.value = li.textContent; form.requestSubmit(); });
+  });
+
+  document.getElementById("reset").addEventListener("click", async function () {
+    try {
+      await fetch("api/reset", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+    } catch (e) { /* nothing to undo locally */ }
+    location.reload();
+  });
+})();
+</script>
+</body>
+</html>

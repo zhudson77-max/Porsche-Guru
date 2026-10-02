@@ -21,6 +21,17 @@ python -m porsche_guru --data my_models.csv  # or point at another table
 
 Web search must be enabled for your organization in the Claude Console.
 
+## Web version and deployment
+
+```bash
+python -m porsche_guru.web    # open http://localhost:8080 (set PORT to change it)
+```
+
+The `Dockerfile` starts the same server on port 8080 and is what hosted deploys should use
+(a `Procfile` with the same command is included for buildpack-style platforms). On the host,
+set `ANTHROPIC_API_KEY` as an environment variable or secret, because `.env` is not committed.
+`GET /healthz` returns `{"ok": true, ...}` for health checks.
+
 ## Model table
 
 `data/porsche_911.csv` holds 288 Porsche 911 variants, from the 1964 2.0 to the 992, with 61
