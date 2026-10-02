@@ -27,6 +27,8 @@ from .data import ModelTable
 INDEX_HTML = (Path(__file__).parent / "static" / "index.html").read_bytes()
 JOB_TTL_SECONDS = 3600
 MAX_BODY_BYTES = 64 * 1024
+# Strongly probes /health by default; the others cover common platform conventions.
+HEALTH_PATHS = {"/health", "/healthz", "/ready"}
 
 
 class Job:
@@ -151,7 +153,7 @@ def make_handler(app: App):
             path = self.path.split("?", 1)[0]
             if path == "/":
                 self._send(HTTPStatus.OK, INDEX_HTML, "text/html; charset=utf-8")
-            elif path == "/healthz":
+            elif path in HEALTH_PATHS:
                 self._json(HTTPStatus.OK, {"ok": True, "models": len(app.table.rows)})
             elif path.startswith("/api/jobs/"):
                 job = app.jobs.get(path.rsplit("/", 1)[-1])
@@ -161,6 +163,14 @@ def make_handler(app: App):
                     self._json(HTTPStatus.OK, job.to_json())
             else:
                 self._json(HTTPStatus.NOT_FOUND, {"error": "Not found."})
+
+        def do_HEAD(self):
+            # Some probes use HEAD; answer health paths and the page without a body.
+            path = self.path.split("?", 1)[0]
+            ok = path == "/" or path in HEALTH_PATHS
+            self.send_response(HTTPStatus.OK if ok else HTTPStatus.NOT_FOUND)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
 
         def do_POST(self):
             path = self.path.split("?", 1)[0]

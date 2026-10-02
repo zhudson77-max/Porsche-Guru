@@ -42,8 +42,12 @@ class WebTest(unittest.TestCase):
         status, body = self.request("/")
         self.assertEqual(status, 200)
         self.assertIn(b"Porsche <span>Guru</span>", body)
-        status, body = self.request("/healthz")
-        self.assertEqual((status, json.loads(body)["models"]), (200, 10))
+        for path in ("/health", "/healthz", "/ready"):
+            status, body = self.request(path)
+            self.assertEqual((status, json.loads(body)["models"]), (200, 10))
+        req = urllib.request.Request(self.base + "/health", method="HEAD")
+        with urllib.request.urlopen(req, timeout=5) as res:
+            self.assertEqual(res.status, 200)
 
     def test_ask_runs_job_to_completion(self):
         status, body = self.request("/api/ask", {"session_id": "s1", "question": "Find GT3s"})

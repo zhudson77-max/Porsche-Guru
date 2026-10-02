@@ -30,7 +30,8 @@ python -m porsche_guru.web    # open http://localhost:8080 (set PORT to change i
 The `Dockerfile` starts the same server on port 8080 and is what hosted deploys should use
 (a `Procfile` with the same command is included for buildpack-style platforms). On the host,
 set `ANTHROPIC_API_KEY` as an environment variable or secret, because `.env` is not committed.
-`GET /healthz` returns `{"ok": true, ...}` for health checks.
+`strongly.manifest.yaml` configures the Strongly deploy (port, start command, health check,
+required `ANTHROPIC_API_KEY` secret). `GET /health` returns `{"ok": true, ...}` for health checks.
 
 ## Model table
 

@@ -1,0 +1,37 @@
+# strongly.manifest.yaml: deployment config for the Strongly platform
+version: "1.0"
+type: custom
+name: porsche-guru
+description: Porsche 911 spec lookup and live listing search, powered by Claude
+homepage: https://github.com/zhudson77-max/Porsche-Guru
+tags:
+  - ai
+  - python
+
+ports:
+  - port: 8080
+    name: http
+    expose: true
+
+env:
+  - name: ANTHROPIC_API_KEY
+    value: ""
+    required: true
+    secret: true
+    description: Anthropic API key used to call Claude
+  - name: PORSCHE_GURU_EFFORT
+    value: "high"
+    required: false
+    description: "Claude effort level: low, medium, high, xhigh or max"
+
+runtime:
+  command: ["python", "-m", "porsche_guru.web"]
+  working_dir: /app
+  health_check_path: /health
+  readiness_check_path: /health
+  startup_timeout: 60
+
+health_check:
+  path: /health
+  initial_delay: 5
+  period: 30
