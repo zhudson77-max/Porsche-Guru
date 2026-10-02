@@ -112,7 +112,10 @@ def describe_error(e: Exception) -> str:
         # The SDK raises this when no API key or other credential is configured at all.
         return "The server has no ANTHROPIC_API_KEY set. Add it to the app's environment variables and restart."
     if isinstance(e, anthropic.AuthenticationError):
-        return "Authentication failed: the server's ANTHROPIC_API_KEY is missing or invalid."
+        return (
+            "Anthropic rejected the server's ANTHROPIC_API_KEY (the key is set, but not valid). "
+            "Check it in the app's settings; the app logs show its length and first characters."
+        )
     if isinstance(e, anthropic.RateLimitError):
         return "Rate limited by the Anthropic API; wait a moment and try again."
     if isinstance(e, anthropic.APIStatusError):
@@ -206,11 +209,37 @@ def make_handler(app: App):
     return Handler
 
 
+def normalize_api_key() -> str:
+    """Clean up ANTHROPIC_API_KEY as pasted into a deploy form, and describe it for the logs.
+
+    Strips surrounding whitespace, line breaks and quotes, which a pasted value often picks up
+    and which make the API reject an otherwise valid key. Returns a description that never
+    includes the key itself.
+    """
+    raw = os.environ.get("ANTHROPIC_API_KEY", "")
+    key = raw.strip().strip("'\"").strip()
+    if not key:
+        os.environ.pop("ANTHROPIC_API_KEY", None)
+        return "ANTHROPIC_API_KEY is not set; questions will fail until it is."
+    os.environ["ANTHROPIC_API_KEY"] = key
+    notes = []
+    if key != raw:
+        notes.append("removed surrounding spaces/quotes")
+    if key.startswith("sk-ant-admin"):
+        notes.append("this is an Admin API key, which cannot call Claude; use a regular API key")
+    elif not key.startswith("sk-ant-api"):
+        notes.append("does not start with 'sk-ant-api', so it is probably not an Anthropic API key")
+    if any(c.isspace() for c in key):
+        notes.append("contains spaces or line breaks inside it")
+    # Only the generic prefix is logged (e.g. 'sk-ant-api03-'), never the secret part.
+    shape = f"ANTHROPIC_API_KEY is set ({len(key)} characters, starts '{key[:13]}')"
+    return shape + (": " + "; ".join(notes) if notes else "")
+
+
 def main() -> None:
     port = int(os.environ.get("PORT", "8080"))
     table = ModelTable(DEFAULT_DATA)
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("Warning: ANTHROPIC_API_KEY is not set; questions will fail until it is.", flush=True)
+    print(normalize_api_key(), flush=True)
     server = ThreadingHTTPServer(("0.0.0.0", port), make_handler(App(table)))
     print(f"Porsche Guru: {len(table.rows)} models loaded, serving on port {port}", flush=True)
     server.serve_forever()

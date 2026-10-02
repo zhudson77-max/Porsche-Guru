@@ -8,7 +8,7 @@ from http.server import ThreadingHTTPServer
 from types import SimpleNamespace as NS
 
 from porsche_guru.data import ModelTable
-from porsche_guru.web import App, make_handler
+from porsche_guru.web import App, make_handler, normalize_api_key
 from tests.test_porsche_guru import DATA, fake_client
 
 
@@ -82,6 +82,38 @@ class WebTest(unittest.TestCase):
         self.assertEqual(self.request("/api/ask", {"question": "q"})[0], 400)
         self.assertEqual(self.request("/api/ask", {"session_id": "s", "question": "  "})[0], 400)
         self.assertEqual(self.request("/api/jobs/nope")[0], 404)
+
+
+class ApiKeyTest(unittest.TestCase):
+    def setUp(self):
+        import os
+        self.env = os.environ
+        self.saved = self.env.get("ANTHROPIC_API_KEY")
+
+    def tearDown(self):
+        if self.saved is None:
+            self.env.pop("ANTHROPIC_API_KEY", None)
+        else:
+            self.env["ANTHROPIC_API_KEY"] = self.saved
+
+    def check(self, raw):
+        self.env["ANTHROPIC_API_KEY"] = raw
+        return normalize_api_key(), self.env.get("ANTHROPIC_API_KEY")
+
+    def test_strips_pasted_whitespace_and_quotes(self):
+        note, key = self.check(' "sk-ant-api03-abcdefghijklmnop"\n')
+        self.assertEqual(key, "sk-ant-api03-abcdefghijklmnop")
+        self.assertIn("removed surrounding", note)
+        self.assertNotIn("abcdefghijklmnop", note)
+
+    def test_flags_wrong_key_types(self):
+        self.assertIn("Admin API key", self.check("sk-ant-admin01-xyz")[0])
+        self.assertIn("probably not an Anthropic", self.check("ghp_abc123")[0])
+
+    def test_empty_key_is_unset(self):
+        note, key = self.check("   ")
+        self.assertIsNone(key)
+        self.assertIn("not set", note)
 
 
 if __name__ == "__main__":
